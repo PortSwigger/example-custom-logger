@@ -21,7 +21,6 @@ class BurpExtender(IBurpExtender, ITab, IHttpListener, IMessageEditorController,
     #
     
     def	registerExtenderCallbacks(self, callbacks):
-    
         # keep a reference to our callbacks object
         self._callbacks = callbacks
         
@@ -80,17 +79,16 @@ class BurpExtender(IBurpExtender, ITab, IHttpListener, IMessageEditorController,
     #
     
     def processHttpMessage(self, toolFlag, messageIsRequest, messageInfo):
-    
         # only process requests
-        if not messageIsRequest:
+        if messageIsRequest:
+            return
         
-            # create a new log entry with the message details
-            self._lock.acquire()
-            row = self._log.size()
-            self._log.add(LogEntry(toolFlag, self._callbacks.saveBuffersToTempFiles(messageInfo), self._helpers.analyzeRequest(messageInfo).getUrl()))
-            self.fireTableRowsInserted(row, row)
-            self._lock.release()
-        return
+        # create a new log entry with the message details
+        self._lock.acquire()
+        row = self._log.size()
+        self._log.add(LogEntry(toolFlag, self._callbacks.saveBuffersToTempFiles(messageInfo), self._helpers.analyzeRequest(messageInfo).getUrl()))
+        self.fireTableRowsInserted(row, row)
+        self._lock.release()
 
     #
     # extend AbstractTableModel
@@ -139,11 +137,9 @@ class BurpExtender(IBurpExtender, ITab, IHttpListener, IMessageEditorController,
 #
     
 class Table(JTable):
-
     def __init__(self, extender):
         self._extender = extender
         self.setModel(extender)
-        return
     
     def changeSelection(self, row, col, toggle, extend):
     
@@ -154,17 +150,13 @@ class Table(JTable):
         self._extender._currentlyDisplayedItem = logEntry._requestResponse
         
         JTable.changeSelection(self, row, col, toggle, extend)
-        return
     
 #
 # class to hold details of each log entry
 #
 
 class LogEntry:
-
     def __init__(self, tool, requestResponse, url):
         self._tool = tool
         self._requestResponse = requestResponse
         self._url = url
-        return
-      

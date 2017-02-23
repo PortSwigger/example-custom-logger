@@ -12,49 +12,47 @@ class BurpExtender
   #
   
   def	registerExtenderCallbacks(callbacks)
-  
     # keep a reference to our callbacks object
     @callbacks = callbacks
     
     # obtain an extension helpers object
-    @helpers = callbacks.getHelpers()
+    @helpers = callbacks.getHelpers
     
     # set our extension name
-    callbacks.setExtensionName("Custom logger")
+    callbacks.setExtensionName "Custom logger"
     
     # create the log
-    @log = java.util.ArrayList.new()
-    @mutex = Mutex.new()
+    @log = java.util.ArrayList.new
+    @mutex = Mutex.new
     
     # main split pane
-    @splitpane = javax.swing.JSplitPane.new(0)
+    @splitpane = javax.swing.JSplitPane.new 0
     
     # table of log entries
-    @tableModel = LogTableModel.new(self, @log)
-    logTable = Table.new(self, @tableModel)
-    scrollPane = javax.swing.JScrollPane.new(logTable)
-    @splitpane.setLeftComponent(scrollPane)
+    @tableModel = LogTableModel.new self, @log
+    logTable = Table.new self, @tableModel
+    scrollPane = javax.swing.JScrollPane.new logTable
+    @splitpane.setLeftComponent scrollPane
 
     # tabs with request/response viewers
-    tabs = javax.swing.JTabbedPane.new()
-    @requestViewer = callbacks.createMessageEditor(self, false)
-    @responseViewer = callbacks.createMessageEditor(self, false)
-    tabs.addTab("Request", @requestViewer.getComponent())
-    tabs.addTab("Response", @responseViewer.getComponent())
-    @splitpane.setRightComponent(tabs)
+    tabs = javax.swing.JTabbedPane.new
+    @requestViewer = callbacks.createMessageEditor self, false
+    @responseViewer = callbacks.createMessageEditor self, false
+    tabs.addTab "Request", @requestViewer.getComponent
+    tabs.addTab "Response", @responseViewer.getComponent
+    @splitpane.setRightComponent tabs
     
     # customize our UI components
-    callbacks.customizeUiComponent(@splitpane)
-    callbacks.customizeUiComponent(logTable)
-    callbacks.customizeUiComponent(scrollPane)
-    callbacks.customizeUiComponent(tabs)
+    callbacks.customizeUiComponent @splitpane
+    callbacks.customizeUiComponent logTable
+    callbacks.customizeUiComponent scrollPane
+    callbacks.customizeUiComponent tabs
     
     # add the custom tab to Burp's UI
-    callbacks.addSuiteTab(self)
+    callbacks.addSuiteTab self
     
     # register ourselves as an HTTP listener
-    callbacks.registerHttpListener(self)
-    
+    callbacks.registerHttpListener self
   end
       
   #
@@ -62,11 +60,11 @@ class BurpExtender
   #
   
   def getTabCaption()
-    return "Logger"
+    "Logger"
   end
   
   def getUiComponent()
-    return @splitpane
+    @splitpane
   end
       
   #
@@ -74,16 +72,14 @@ class BurpExtender
   #
   
   def processHttpMessage(toolFlag, messageIsRequest, messageInfo)
-  
     # only process requests
-    if (!messageIsRequest)
+    return if messageIsRequest
     
-      # create a new log entry with the message details
-      @mutex.synchronize do
-	      row = @log.size()
-	      @log.add(LogEntry.new(toolFlag, @callbacks.saveBuffersToTempFiles(messageInfo), @helpers.analyzeRequest(messageInfo).getUrl()))
-	      @tableModel.fireTableRowsInserted(row, row)
-	    end
+    # create a new log entry with the message details
+    @mutex.synchronize do
+      row = @log.size
+      @log.add LogEntry.new(toolFlag, @callbacks.saveBuffersToTempFiles(messageInfo), @helpers.analyzeRequest(messageInfo).getUrl)
+      @tableModel.fireTableRowsInserted row, row
     end
   end
 
@@ -93,15 +89,15 @@ class BurpExtender
   #
   
   def getHttpService()
-    return @currentlyDisplayedItem.getHttpService()
+    @currentlyDisplayedItem.getHttpService
   end
 
   def getRequest()
-    return @currentlyDisplayedItem.getRequest()
+    @currentlyDisplayedItem.getRequest
   end
 
   def getResponse()
-    return @currentlyDisplayedItem.getResponse()
+    @currentlyDisplayedItem.getResponse
   end
 
 	#
@@ -127,8 +123,6 @@ class BurpExtender
   def currentlyDisplayedItem=(currentlyDisplayedItem)
     @currentlyDisplayedItem = currentlyDisplayedItem
   end
-  
-
 end
 
 
@@ -137,7 +131,6 @@ end
 #
 
 class LogTableModel < javax.swing.table.DefaultTableModel
-  
   def initialize(extender, log)
     super 0, 0
     @extender = extender
@@ -146,7 +139,7 @@ class LogTableModel < javax.swing.table.DefaultTableModel
   
   def getRowCount()
     begin
-      return @log.size()
+      return @log.size
     rescue
       return 0
     end
@@ -157,26 +150,28 @@ class LogTableModel < javax.swing.table.DefaultTableModel
   end
 
   def getColumnName(columnIndex)
-    if (columnIndex == 0)
-      return "Tool"
+    return case columnIndex
+    when 0
+      "Tool"
+    when 1
+      "URL"
+    else
+      ""
     end
-    if (columnIndex == 1)
-      return "URL"
-    end
-    return ""
   end
 
   def getValueAt(rowIndex, columnIndex)
-    logEntry = @log.get(rowIndex)
-    if (columnIndex == 0)
-      return @extender.callbacks.getToolName(logEntry.tool)
-    end
-    if (columnIndex == 1)
-      return logEntry.url.toString()
-    end
-    return ""
-  end
+    logEntry = @log.get rowIndex
 
+    return case columnIndex
+    when 0
+      @extender.callbacks.getToolName logEntry.tool
+    when 1
+      logEntry.url.toString
+    else    
+      ""
+    end
+  end
 end
 
 
@@ -185,23 +180,20 @@ end
 #
     
 class Table < javax.swing.JTable
-
   def initialize(extender, tableModel)
     super tableModel
     @extender = extender
   end
   
   def changeSelection(row, col, toggle, extend)
-  
     # show the log entry for the selected row
-    logEntry = @extender.log.get(row)
-    @extender.requestViewer.setMessage(logEntry.requestResponse.getRequest(), true)
-    @extender.responseViewer.setMessage(logEntry.requestResponse.getResponse(), false)
+    logEntry = @extender.log.get row
+    @extender.requestViewer.setMessage logEntry.requestResponse.getRequest, true
+    @extender.responseViewer.setMessage logEntry.requestResponse.getResponse, false
     @extender.currentlyDisplayedItem = logEntry.requestResponse
     
-    super(row, col, toggle, extend)
+    super row, col, toggle, extend
   end
-    
 end
     
     
@@ -210,7 +202,6 @@ end
 #
 
 class LogEntry
-
   def initialize(tool, requestResponse, url)
     @tool = tool
     @requestResponse = requestResponse
@@ -218,7 +209,7 @@ class LogEntry
   end
         
 	#
-	# getter / setters
+	# getters
 	#
  	
   def tool
@@ -232,5 +223,4 @@ class LogEntry
   def url
     @url
   end
-
 end
